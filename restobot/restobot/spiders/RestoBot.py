@@ -53,40 +53,17 @@ class RestoBot(scrapy.Spider):
 
     #check main,py for start urls for various countries
 
-    start_urls = [
-    "https://www.opentable.ca/rest_list.aspx?m=358",
-    "https://www.opentable.ca/s/restaurantlist?metroid=3374",
-    "https://www.opentable.ca/rest_list.aspx?m=310",
-    "https://www.opentable.ca/los-cabos-mexico-restaurant-listings",
-    "https://www.opentable.ca/rest_list.aspx?m=502",
-    "https://www.opentable.ca/rest_list.aspx?m=346",
-    "https://www.opentable.ca/s/restaurantlist?metroid=499",
-    "https://www.opentable.ca/rest_list.aspx?m=334",
-    "https://www.opentable.ca/rest_list.aspx?m=475",
-    "https://www.opentable.ca/rest_list.aspx?m=3400",
-    "https://www.opentable.ca/s/restaurantlist?metroid=490",
-    "https://www.opentable.ca/rest_list.aspx?m=349",
-    "https://www.opentable.ca/rest_list.aspx?m=442",
-    "https://www.opentable.ca/s/restaurantlist?metroid=3385",
-    "https://www.opentable.ca/mexico-city-mexico-restaurant-listings",
-    "https://www.opentable.ca/s/restaurantlist?metroid=3383",
-    "https://www.opentable.ca/rest_list.aspx?m=355",
-    "https://www.opentable.ca/s/restaurantlist?metroid=3370",
-    "https://www.opentable.ca/s/restaurantlist?metroid=3486",
-    "https://www.opentable.ca/rest_list.aspx?m=478",
-    "https://www.opentable.ca/rest_list.aspx?m=361",
-    "https://www.opentable.ca/puerto-vallarta-mexico-restaurant-listings",
-    "https://www.opentable.ca/rest_list.aspx?m=457",
-    "https://www.opentable.ca/rest_list.aspx?m=460",
-    "https://www.opentable.ca/s/restaurantlist?metroid=508",
-    "https://www.opentable.ca/rest_list.aspx?m=352",
-    "https://www.opentable.ca/rest_list.aspx?m=472",
-    "https://www.opentable.ca/rest_list.aspx?m=3443",
-    "https://www.opentable.ca/s/restaurantlist?metroid=3437",
-    "https://www.opentable.ca/rest_list.aspx?m=364",
-    "https://www.opentable.ca/s/restaurantlist?metroid=505",
-    "https://www.opentable.ca/rest_list.aspx?m=493"
-]
+    start_urls = ["https://www.opentable.ca/nova-scotia-new-brunswick-restaurant-listings",
+                  "https://www.opentable.ca/calgary-alberta-restaurant-listings",
+                  "https://www.opentable.ca/edmonton-alberta-restaurant-listings",
+                  "https://www.opentable.ca/manitoba-saskatchewan-restaurant-listings",
+                  "https://www.opentable.ca/montreal-quebec-restaurant-listings",
+                  "https://www.opentable.ca/rest_list.aspx?m=406",
+                  "https://www.opentable.ca/rest_list.aspx?m=451",
+                  "https://www.opentable.ca/toronto-ontario-restaurant-listings",
+                  "https://www.opentable.ca/vancouver-british-columbia-restaurant-listings",
+                  "https://www.opentable.ca/rest_list.aspx?m=3369"
+                  ]
 
     def get_details(self, response):
         # global first_next_counter
@@ -323,3 +300,6 @@ class RestoBot(scrapy.Spider):
 
         # if counter >= 10:
         #     break
+from scrapy import cmdline
+if __name__ == '__main__':
+    cmdline.execute("scrapy crawl restobot -O output.json".split())
