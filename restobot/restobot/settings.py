@@ -15,7 +15,8 @@ AUTOTHROTTLE_ENABLED = True
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'restobot (+http://www.yourdomain.com)'
-
+# ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
+# FILES_STORE = 'downloaded'
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 

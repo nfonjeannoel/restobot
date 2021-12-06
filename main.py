@@ -140,6 +140,20 @@ twit body response.css("p.timeline-Tweet-text::text").extract()
 
 for case 2
 hotel name response.css("h1.Ic5GaGP-VRdwdCHinbp2R._1E11-nyyWnndSSOElGuAVa::text").get()
+
+rid = 0
+head = response.css("head").get()
+for c in head.split():
+    if "rid" in c:
+        for i in c.split(","):
+            if "rid" in i:
+                try:
+                    rid = int(i[6:])
+                    print(rid)
+                except:
+                    continue
+
+
 """
 
 #mexico
