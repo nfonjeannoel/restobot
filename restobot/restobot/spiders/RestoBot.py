@@ -1,36 +1,71 @@
 import json
-from algorithm import getJson, get_image_list, get_phone_list, get_ird
+import datetime
+import boto3
+from scrapy.crawler import CrawlerProcess
+
+from algorithm import getJson, get_image_list, get_phone_list, get_ird, get_menu
 import scrapy
 import requests
+from scrapy import cmdline
+from restobot.restobot.spiders.endpoints import endpoint
 
 first_next_counter = True
 max_count = 0
 hundred_adder = 0
 page_counter = 0
+all_data = []
+choice = 0
+all_data = []
+
+
+def save_data():
+    global all_data
+    with open(f"{file_name}.json", "w") as f:
+        f.write(json.dumps(all_data))
+    f.close()
 
 
 class RestoBot(scrapy.Spider):
     name = "restobot"
-
+    print(f"""
+        choose 1 for canada
+        choose 2 for germany
+        choose 3 for mexico
+        """)
+    choice = int(input("enter choice"))
     # check main,py for start urls for various countries
+    # change filename to the name of the city
+    global file_name
+    if choice == 1:
+        start_urls = endpoint[1]
+        file_name = "canada"
+    if choice == 2:
+        start_urls = endpoint[2]
+        file_name = "germany"
+    if choice == 3:
+        start_urls = endpoint[3]
+        file_name = "mexico"
 
-    start_urls = ["https://www.opentable.ca/nova-scotia-new-brunswick-restaurant-listings",
-                  "https://www.opentable.ca/calgary-alberta-restaurant-listings",
-                  "https://www.opentable.ca/edmonton-alberta-restaurant-listings",
-                  "https://www.opentable.ca/manitoba-saskatchewan-restaurant-listings",
-                  "https://www.opentable.ca/montreal-quebec-restaurant-listings",
-                  "https://www.opentable.ca/rest_list.aspx?m=406",
-                  "https://www.opentable.ca/rest_list.aspx?m=451",
-                  "https://www.opentable.ca/toronto-ontario-restaurant-listings",
-                  "https://www.opentable.ca/vancouver-british-columbia-restaurant-listings",
-                  "https://www.opentable.ca/rest_list.aspx?m=3369"
-                  ]
+    else:
+        print("*" * 20)
+
+    def add_to_aws(self, file_name, save_store):
+        # remember to change file name to the json you want
+
+        s3 = boto3.resource('s3', aws_access_key_id="XXXXXXXXXX",
+                            aws_secret_access_key="XXXXXXXX")
+        s3object = s3.Object('tw-external-dumps1',
+                             f"opentable/canada/{str(datetime.datetime.utcnow().isocalendar()[0]) + '-' + str(datetime.datetime.utcnow().isocalendar()[1])}/{file_name.split('/')[-1]}.json")
+        s3object.put(
+            Body=(bytes(json.dumps(save_store).encode('UTF-8'))))
 
     def get_details(self, response):
         rid = get_ird(response.css("head").get())
-        # r = requests.get(response.url)
         menu_variants = getJson(response.text)
+        # print(menu_variants)
+        menus = get_menu(menu_variants)
         hotel_name = response.css("h1.a6481dc2._4a4e7a6a::text").get()
+        other_offers = []
         if hotel_name is None or len(hotel_name.split()) == 0:
             tags = response.css("a.d302396e::text").extract()
             # page uses different css selectors probably when it does not have enough info or is not verified
@@ -39,9 +74,6 @@ class RestoBot(scrapy.Spider):
                 hotel_name = response.css("h1.Ic5GaGP-VRdwdCHinbp2R._1E11-nyyWnndSSOElGuAVa::text").get()
 
                 brief_description = response.css("p._33FNBS4DDcGGOaAeUsBAsR._3ZYgMThR77irVoyAamOJ3X span::text").get()
-                meal_names = response.css("h4.W9xFP5fLkpgG1TNINCYQQ span::text").extract()
-                meal_description = response.css("p._3ENq-b1Q6nZK-iI1ZI5Vyk::text").extract()
-                menu_name = response.css("h3._3LCWn88NzkJFiBtcOWtTZX.ZaqwCEmxQvIesKN8NRNfi::text").get()
                 other_offers = response.css("div.e7ff71b6.b2f6d1a4::text").extract()
                 other_offers = other_offers[1:-2]
                 website = response.css("a.v47bWSVhEfgDbPybArSqa::text").get()
@@ -55,36 +87,6 @@ class RestoBot(scrapy.Spider):
                     "p._33FNBS4DDcGGOaAeUsBAsR.IEnFAhBwfgkaFnkHj_Twl._3xyTZuwnXRvkj6X6tsZH_M::text").extract()
                 reviewer_name = response.css("p.p40a8Csa04w1i7ep-x1HK.G1kfyull_V3y-AuTlAlGm::text").extract()
                 stars = response.css("div._2s6ofZ_eiTKuvNHV3mVnaG::text").extract()
-
-                new_meals = []
-                for meal in meal_names:
-                    if "€" in meal:
-                        last = new_meals[-1]
-                        new_meals[-1] = last + " - " + meal
-                meal_names = new_meals
-                meal_list = []
-
-                for meal_ind, meal in enumerate(meal_names):
-                    price = "NA"
-                    name = meal
-                    if "€" in meal.split()[-1]:
-                        price = meal.split()[-1]
-                        name = " ".join(meal.split()[:-2])
-                    try:
-                        meal_list.append({
-                            "name": name,
-                            "price": price,
-                            "description": meal_description[meal_ind]
-                        })
-                    except:
-                        meal_list.append({
-                            "name": name,
-                            "price": price,
-                            "description": "NA"
-                        })
-                menu_list = [
-                    {"menu_name": menu_name}, {"items": meal_list}
-                ]
 
                 review_list = []
 
@@ -101,26 +103,12 @@ class RestoBot(scrapy.Spider):
                             "text": review,
                             "rating": stars[review_ind]
                         })
-        # self.no_use()
 
         else:
             tags = response.css("a.d302396e::text").extract()
 
             brief_description = response.css("div._3c23fa05 div::text ").get()
-            meal_names = response.css("div.menu-item-header__3xwnFL-n div::text").extract()
-            new_meals = []
 
-            for meal in meal_names:
-                if "$" in meal:
-                    new_meals[-1] = new_meals[-1] + " - " + meal
-                else:
-                    new_meals.append(meal)
-
-            meal_names = new_meals
-
-            meal_description = response.css("p.menu-description__2HXkC4oE::text").extract()
-            menu_name = response.css("h3.menu-section-title__22Q2IFWX::text").get()
-            # prices = response.css("div.menu-item-header__3xwnFL-n div::text").extract()
             reviews = response.css(".oc-reviews-8107696f p::text").extract()
             reviewer_name = response.css(".oc-reviews-954a6007 span::text").extract()
             website = response.css("._3ddfcf5c._5c8483c8::text").get()
@@ -187,45 +175,24 @@ class RestoBot(scrapy.Spider):
                         "rating": "NA"
                     })
 
-            meal_list = []
-
-            for meal_ind, meal in enumerate(meal_names):
-                price = "NA"
-                name = meal
-                if "$" in meal.split()[-1]:
-                    price = meal.split()[-1]
-                    name = " ".join(meal.split()[:-2])
-                try:
-                    meal_list.append({
-                        "name": name,
-                        "price": price,
-                        "description": meal_description[meal_ind]
-                    })
-                except:
-                    meal_list.append({
-                        "name": name,
-                        "price": price,
-                        "description": "NA"
-                    })
-            menu_list = [
-                {"menu_name": menu_name}, {"items": meal_list}
-            ]
-        yield {
+        mydata = {
             "hotel_name": hotel_name,
             "url": response.url,
             "tags": tags + other_offers,
             "rid": str(rid),
+            "menu": menus,
             "popular_dishes": p_list,
             "phone_number": phone_list,
             "location": location,
             "website": website,
             "overview": brief_description,
-            "menu": menu_list,
-            "menu_variations" : menu_variants,
             "reviews": review_list,
             "twitter_reviews": twit_list,
             "image": image_list + other_image
         }
+        global all_data
+        all_data.append(mydata)
+        yield mydata
 
     def parse(self, response):
         hotel_names = response.css("a.rest-row-name::attr(href)").extract()
@@ -233,9 +200,15 @@ class RestoBot(scrapy.Spider):
         page_counter += 1
         for hotel in hotel_names:
             yield response.follow(hotel, callback=self.get_details)
+            # break
+        # self.add_to_aws(file_name, all_data)
+        print("*saving " * 8)
 
-
-from scrapy import cmdline
 
 if __name__ == '__main__':
-    cmdline.execute("scrapy crawl restobot -O mexico3.json".split())
+    all_data = []
+    process = CrawlerProcess()
+    process.crawl(RestoBot)
+    process.start()
+    save_data()
+    # cmdline.execute(f"scrapy crawl restobot -O {file_name}.json".split())

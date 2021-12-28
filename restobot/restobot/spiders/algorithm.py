@@ -1,8 +1,41 @@
 import json
 
 
+def get_menu(raw_lst):
+    menus_list = []
+    for section in raw_lst:
+        data = {}
+
+        try:
+            data["title"] = section["title"]
+        except KeyError:
+            print("no key as title")
+            data["title"] = "NA"
+
+        try:
+            data["currency"] = section["currency"]
+        except KeyError:
+            print("no key as currency")
+            data["NA"] = "NA"
+
+        try:
+            data["description"] = section["description"]
+        except KeyError:
+            print("no key as descriptions")
+            data["description"] = "NA"
+
+        try:
+            data["sections"] = section["sections"]
+        except KeyError:
+            print("no key as sections")
+            data["sections"] = []
+
+        menus_list.append(data)
+    return menus_list
+
+
 def getJson(expr):
-    expr = expr.split('"sections":')
+    expr = expr.split('"menus":')
     if len(expr) < 2:
         # print("less than 2")
         return
@@ -34,8 +67,7 @@ def getJson(expr):
                 #     print("*"*20)
                 #     print()
                 # print(f"end index {ind}")
-                return json.loads(expr[0:ind+1])
-
+                return json.loads(expr[0:ind + 1])
 
 
 def get_phone_list(test):
@@ -55,8 +87,6 @@ def get_phone_list(test):
                     res += char
                     build = True
     return num_list
-
-
 
 
 def get_image_list(myresult):
